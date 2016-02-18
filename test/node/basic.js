@@ -8,6 +8,17 @@ var request = require('../../');
 
 describe('[node] request', function(){
 
+  describe('with an url', function(){
+    it('should preserve the encoding of the url', function(done){
+      request
+      .get('http://localhost:5000/url?a=(b%29')
+      .end(function(err, res){
+        assert('/url?a=(b%29' == res.text);
+        done();
+      })
+    })
+  })
+
   describe('with an object', function(){
     it('should format the url', function(done){
       request
@@ -40,33 +51,6 @@ describe('[node] request', function(){
         assert('POST' == obj.method);
         assert(':5000/echo' == obj.url);
         assert('baz' == obj.data.foo);
-        done();
-      });
-    })
-  })
-
-  describe('should allow the send shorthand', function() {
-    it('with callback in the method call', function(done) {
-      request
-      .get('http://localhost:5000/login', function(err, res) {
-          assert(res.status == 200);
-          done();
-      });
-    })
-
-    it('with data in the method call', function(done) {
-      request
-      .post('http://localhost:5000/echo', { foo: 'bar' })
-      .end(function(err, res) {
-        assert('{"foo":"bar"}' == res.text);
-        done();
-      });
-    })
-
-    it('with callback and data in the method call', function(done) {
-      request
-      .post('http://localhost:5000/echo', { foo: 'bar' }, function(err, res) {
-        assert('{"foo":"bar"}' == res.text);
         done();
       });
     })
@@ -119,6 +103,21 @@ describe('[node] request', function(){
       })
     })
   })
+
+  describe('case-insensitive', function(){
+    it('should set/get header fields case-insensitively', function(){
+      var r = request.post('http://localhost:5000/echo');
+      r.set('MiXeD', 'helloes');
+      assert(r.get('mixed') === 'helloes');
+    });
+
+    it('should unset header fields case-insensitively', function () {
+      var r = request.post('http://localhost:5000/echo');
+      r.set('MiXeD', 'helloes');
+      r.unset('MIXED');
+      assert(r.get('mixed') === undefined);
+    });
+  });
 
   describe('req.write(str)', function(){
     it('should write the given data', function(done){
@@ -192,6 +191,18 @@ describe('[node] request', function(){
     })
   })
 
+  describe('.withCredentials()', function(){
+    it('should not throw an error when using the client-side "withCredentials" method', function(done){
+      request
+      .get('http://localhost:5000/custom')
+      .withCredentials()
+      .end(function(err, res){
+        assert(null == err);
+        done();
+      });
+    })
+  })
+
   describe('.agent()', function(){
     it('should return the defaut agent', function(done){
       var req = request.post('http://localhost:5000/echo');
@@ -202,7 +213,7 @@ describe('[node] request', function(){
 
   describe('.agent(undefined)', function(){
     it('should set an agent to undefined and ensure it is chainable', function(done){
-      var req = request.get();
+      var req = request.get('http://localhost:5000/echo');
       var ret = req.agent(undefined);
       ret.should.equal(req);
       assert(req.agent() === undefined);
@@ -213,7 +224,7 @@ describe('[node] request', function(){
   describe('.agent(new http.Agent())', function(){
     it('should set passed agent', function(done){
       var http = require('http');
-      var req = request.get();
+      var req = request.get('http://localhost:5000/echo');
       var agent = new http.Agent();
       var ret = req.agent(agent);
       ret.should.equal(req);

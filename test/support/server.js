@@ -9,6 +9,10 @@ app.use(function(req, res, next) {
   next();
 });
 
+app.all('/url', function(req, res){
+  res.send(req.url);
+});
+
 app.all('/echo', function(req, res){
   res.writeHead(200, req.headers);
   req.pipe(res);
@@ -38,6 +42,11 @@ app.get('/login', function(req, res){
 
 app.get('/json', function(req, res){
   res.status(200).json({ name: 'manny' });
+});
+
+app.get('/json-hal', function(req, res){
+  res.set('content-type', 'application/hal+json');
+  res.send({ name: 'hal 5000' });
 });
 
 app.get('/ok', function(req, res){
@@ -136,6 +145,17 @@ app.get('/pets', function(req, res){
   res.send(['tobi', 'loki', 'jane']);
 });
 
+app.get('/invalid-json', function(req, res) {
+  res.set('content-type', 'application/json');
+  // sample invalid json taken from https://github.com/swagger-api/swagger-ui/issues/1354
+  res.send(")]}', {'header':{'code':200,'text':'OK','version':'1.0'},'data':'some data'}");
+});
+
+app.get('/invalid-json-forbidden', function(req, res) {
+  res.set('content-type', 'application/json');
+  res.status(403).send("Forbidden");
+});
+
 app.get('/text', function(req, res){
   res.send("just some text");
 });
@@ -179,6 +199,27 @@ app.get('/arraybuffer', function(req, res) {
   var content = new ArrayBuffer(1000);
   res.set('Content-Type', 'application/vnd.superagent');
   res.send(content);
+});
+
+app.post('/empty-body', bodyParser.text(), function(req, res) {
+  if (typeof req.body === 'object' && Object.keys(req.body).length === 0) {
+    res.sendStatus(204);
+  }
+  else {
+    res.sendStatus(400);
+  }
+});
+
+
+app.get('/collection-json', function(req, res){
+  res.set('content-type', 'application/vnd.collection+json');
+  res.send({ name: 'chewbacca' });
+});
+
+app.get('/invalid-json', function(req, res) {
+  res.set('content-type', 'application/json');
+  // sample invalid json taken from https://github.com/swagger-api/swagger-ui/issues/1354
+  res.send(")]}', {'header':{'code':200,'text':'OK','version':'1.0'},'data':'some data'}");
 });
 
 app.listen(process.env.ZUUL_PORT);

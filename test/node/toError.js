@@ -9,12 +9,19 @@ app.get('/', function(req, res){
   res.status(400).send('invalid json');
 });
 
-app.listen(8888);
+var base = 'http://localhost'
+var server;
+before(function listen(done) {
+  server = app.listen(0, function listening() {
+    base += ':' + server.address().port;
+    done();
+  });
+});
 
 describe('res.toError()', function(){
   it('should return an Error', function(done){
     request
-    .get('http://localhost:8888/')
+    .get(base)
     .end(function(err, res){
       var err = res.toError();
       assert(err.status == 400);
