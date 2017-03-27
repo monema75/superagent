@@ -102,7 +102,32 @@ describe('request', function(){
     });
   })
 
+
   describe('res.error', function(){
+    it('ok', function(done){
+      var calledErrorEvent = false;
+      var calledOKHandler = false;
+      request
+      .get(uri + '/error')
+      .ok(function(res){
+        assert.strictEqual(500, res.status);
+        calledOKHandler = true;
+        return true;
+      })
+      .on('error', function(err){
+        calledErrorEvent = true;
+      })
+      .end(function(err, res){
+        try{
+          assert.ifError(err);
+          assert.strictEqual(res.status, 500);
+          assert(!calledErrorEvent);
+          assert(calledOKHandler);
+          done();
+        } catch(e) { done(e); }
+      });
+    });
+
     it('should should be an Error object', function(done){
       var calledErrorEvent = false;
       request
@@ -141,6 +166,22 @@ describe('request', function(){
         assert.equal(err.message, 'Internal Server Error');
       });
     })
+
+    it('with .ok() returning false', function(){
+      if ('undefined' === typeof Promise) {
+        return;
+      }
+
+      return request
+      .get(uri + '/echo')
+      .ok(function() {return false;})
+      .then(function(){
+        assert.fail();
+      }, function(err){
+        assert.equal(200, err.response.status);
+        assert.equal(err.message, 'OK');
+      });
+    })
   })
 
   describe('res.header', function(){
@@ -155,6 +196,26 @@ describe('request', function(){
       });
     })
   })
+
+  describe('set headers', function() {
+    before(function() {
+      Object.prototype.invalid = '\n';
+    });
+
+    after(function() {
+      delete Object.prototype.invalid;
+    });
+
+    it('should only set headers for ownProperties of header', function(done) {
+      try {
+        request
+          .get(uri + '/echo')
+          .end(done);
+      } catch (e) {
+        done(e)
+      }
+    });
+  });
 
   describe('res.charset', function(){
     it('should be set when present', function(done){
@@ -357,7 +418,7 @@ describe('request', function(){
             try {
           res.should.be.json();
           if (NODE) {
-            res.buffered.should.be.true;
+            res.buffered.should.be.true();
           }
           res.text.should.equal('{"name":"tobi","age":1}');
           done();
@@ -458,11 +519,14 @@ describe('request', function(){
         } catch(e) { done(e); }
     });
 
+      req.on('error', function(error){
+        done(error);
+      });
       req.on('abort', done);
 
       setTimeout(function() {
         req.abort();
-      }, 1000);
+      }, 500);
     })
 
     it('should allow chaining .abort() several times', function(done){
